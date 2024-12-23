@@ -6,18 +6,19 @@ extern "C" void SVMLaunchVM(uptr hostRSP, uptr guestVMCB);
 
 namespace x86 {
 namespace SVM {
-	/*
-	 * 32-bit intercept words in the VMCB Control Area, starting
-	 * at Byte offset 000h.
-	 */
-
-#define INTERCEPT_CPUID     (1UL << 18) // Intercept CPUID Instruction.
+// WORD 3
+#define INTERCEPT_INITR     (1UL << 0)
+#define INTERCEPT_NMI       (1UL << 1)
+#define INTERCEPT_SMI       (1UL << 2)
+#define INTERCEPT_INIT      (1UL << 3)
+#define INTERCEPT_VINTR     (1UL << 3)
+#define INTERCEPT_CPUID     (1UL << 18)
 #define INTERCEPT_IOIO_PROT (1UL << 27)
-#define INTERCEPT_MSR_PROT  (1UL << 28) // MSR_PROT—intercept RDMSR or WRMSR accesses to selected MSRs
+#define INTERCEPT_MSR_PROT  (1UL << 28) 
 
-
-#define INTERCEPT_VMRUN    (1UL << 0)  // Intercept VMRUN instruction.
-#define INTERCEPT_VMMCALL  (1UL << 1)  // Intercept VMMCALL instruction.
+// WORD 4
+#define INTERCEPT_VMRUN    (1UL << 0)
+#define INTERCEPT_VMMCALL  (1UL << 1) 
 				       //
 #define NESTED_CTL_NP_ENABLE         (1UL << 0)
 
@@ -381,10 +382,10 @@ namespace SVM {
 		u64 NextRIP;
 		u8 insn_len;
 		u8 insn_bytes[15];
-		u64 avic_backing_page;	/* Offset 0xe0 */
+		u64 AVICBackingPage;	/* Offset 0xe0 */
 		u8 reserved_6[8];	/* Offset 0xe8 */
-		u64 avic_logical_id;	/* Offset 0xf0 */
-		u64 avic_physical_id;	/* Offset 0xf8 */
+		u64 AVICLogicalID;	/* Offset 0xf0 */
+		u64 AVICPhysicalID;	/* Offset 0xf8 */
 		u8 reserved_7[8];
 		u64 vmsa_pa;		/* Used for an SEV-ES guest */
 		u8 reserved_8[720];

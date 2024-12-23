@@ -24,7 +24,12 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 	guestVmcb->Control.Intercepts[INTERCEPT_EXCEPTION] |= 0xFFFFFFFF;
 	guestVmcb->Control.Intercepts[INTERCEPT_WORD3] |= INTERCEPT_MSR_PROT |
 					                  INTERCEPT_CPUID |
-							  INTERCEPT_IOIO_PROT;
+							  INTERCEPT_IOIO_PROT |
+							  INTERCEPT_INITR |
+							  INTERCEPT_NMI |
+							  INTERCEPT_SMI |
+							  INTERCEPT_INIT |
+							  INTERCEPT_VINTR ;
 
 	guestVmcb->Control.Intercepts[INTERCEPT_WORD4] |= INTERCEPT_VMRUN |
 						          INTERCEPT_VMMCALL;
@@ -34,6 +39,12 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 	guestVmcb->Control.IOPMBasePa = VMM::VirtualToPhysical((uptr)ioPa);
 	Memset(msrPa, 0x0, PAGE_SIZE * 2);
 	Memset(ioPa, 0xFF, PAGE_SIZE * 2);
+
+	/*
+	guestVmcb->Control.AVICBackingPage = VMM::VirtualToPhysical((uptr)PMM::RequestPage());
+	guestVmcb->Control.AVICLogicalID = 0;
+	guestVmcb->Control.AVICPhysicalID = 0;
+	*/
 /*
 	guestVmcb->Control.NestedCtl |= 0 ; // NESTED_CTL_NP_ENABLE;
 	guestVmcb->Control.NestedCR3 = ;
@@ -181,7 +192,6 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 			PRINTK::PrintK(PRINTK_DEBUG "Interrupt virtual\r\n");
 			while(true) { }
 		case _IOIO: {
-			// TODO: do permissions and correct handling
 			usize info = vmcb->Control.ExitInfo1;
 			u16 port = info >> 16;
 			bool type = info & 0b1;
@@ -225,11 +235,18 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 				while(true) { }
 			} else {
 				PRINTK::PrintK(PRINTK_DEBUG "User INT14 at 0x%x\r\n", vmcb->Save.RIP);
+				PRINTK::PrintK(PRINTK_DEBUG "FaultAddress: 0x%x\r\n", vmcb->Control.ExitInfo2);
+				PRINTK::PrintK(PRINTK_DEBUG "ErrorCode: 0x%x\r\n", vmcb->Control.ExitInfo1);
+
 				// TODO: Set wrapper
+				/*
 				vmcb->Save.RIP = (uptr)container->Bindings.ExceptionHandler;
 				context->RDI = 14;
 				context->RSI = vmcb->Control.ExitInfo1;
 				context->RDX = vmcb->Control.ExitInfo2;
+				*/
+
+				while(true) { }
 			}
 			}
 			break;

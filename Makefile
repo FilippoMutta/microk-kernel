@@ -62,6 +62,14 @@ else ifeq ($(ARCH), aarch64)
 
 	LDFLAGS += -m aarch64elf
 	ASMFLAGS = 
+else ifeq ($(ARCH), riscv64)
+	CFLAGS = $(COMMON_CFLAGS) -march=rv64ifd \
+         -mabi=lp64     \
+	 -mcmodel=medlow \
+
+	LDFLAGS += -m elf64lriscv
+	ASMFLAGS = 
+
 else
 	$(error Unsupported ARCH: $(ARCH))
 endif

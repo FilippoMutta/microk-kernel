@@ -134,7 +134,7 @@ extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
 			bool writeAccess = (context->Base.ErrorCode & 0b10) >> 1;
 			bool byUser = (context->Base.ErrorCode & 0b100) >> 2;
 			bool wasInstructionFetch = (context->Base.ErrorCode & 0b1000) >> 4;
-			asm volatile("mov %%cr2, %0" : "=r"(page));
+			asm volatile("mov %0, %%cr2" : "=r"(page));
 
 			PrintRegs(context);
 			PRINTK::PrintK(PRINTK_DEBUG
@@ -198,7 +198,11 @@ extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
 			}
 			break;
 		case 32: {
-			//PRINTK::PrintK(PRINTK_DEBUG "Context switch called.\r\n");
+			PRINTK::PrintK(PRINTK_DEBUG "\r\nContext switch called.\r\n");
+			
+			uptr cr3;
+			asm volatile("mov %0, %%cr3" : "=r"(cr3));
+			PRINTK::PrintK(PRINTK_DEBUG "CR3: 0x%x\r\n", cr3);
 
 			Capability *cpuCap = CAPABILITY::AddressCPUCapability(&info->CurrentContainer->CSpace, (uptr)info->CurrentContainer);
 			if (cpuCap == NULL) {
@@ -207,6 +211,7 @@ extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
 				ArmTimer(&apic, cpuCap->Size);
 			}
 
+			PRINTK::PrintK(PRINTK_DEBUG "Context switch done.\r\n");
 			}
 			break;
 		default:

@@ -105,23 +105,6 @@ SvLV10: ;
         ;
         pushall ; Stack pointer decreased 8 * 16
 
-        ;
-        ; Set parameters for SvHandleVmExit. Below is the current stack leyout.
-        ; ----
-        ; Rsp                             => 0x...dc0 R15               ; GUEST_REGISTERS
-        ;                                    0x...dc8 R14               ;
-        ;                                             ...               ;
-        ;                                    0x...e38 RAX               ;
-        ; Rsp + 8 * 16                    => 0x...e40 TrapFrame         ; HostStackLayout
-        ;                                             ...               ;
-        ; Rsp + 8 * 16 + KTRAP_FRAME_SIZE => 0x...fd0 GuestVmcbPa       ;
-        ;                                    0x...fd8 HostVmcbPa        ;
-        ; Rsp + 8 * 18 + KTRAP_FRAME_SIZE => 0x...fe0 Self              ;
-        ;                                    0x...fe8 SharedVpData      ;
-        ;                                    0x...ff0 Padding1          ;
-        ;                                    0x...ff8 Reserved1         ;
-        ; ----
-        ;
 	mov rdi, rax
         mov rsi, rsp                                ; Rdx <= GuestRegisters
 

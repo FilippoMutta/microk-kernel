@@ -19,12 +19,6 @@ extern "C" void HandleSyscall64();
 extern "C" void HandleSyscall32();
 extern "C" void EnableSSE();
 
-extern "C" void SyscallMain() {
-	PRINTK::PrintK(PRINTK_DEBUG "Syscall called\n");
-
-	while(true) { }
-}
-
 namespace x86 {
 
 inline static u32 GetFamily(u32 sig) {
@@ -109,9 +103,8 @@ IOAPIC ioapic;
 
 void LoadEssentialCPUStructures() {
 	LoadGDT(&gdt, &pointer);
-	TSSInit(&gdt, &tss, (uptr)PMM::RequestPages(8) + PAGE_SIZE * 8);
+	TSSInit(&gdt, &tss, (uptr)PMM::RequestPages(64) + PAGE_SIZE * 64);
 	IDTInit();
-	asm volatile ("cli");
 }
 
 void InitializeCPUFeatures() {
@@ -164,7 +157,7 @@ void InitializeCPUFeatures() {
 	InitializeACPI(&acpi);
 
 	EnableSSE();
-	//EnableSyscalls();
+	EnableSyscalls();
 
 	PRINTK::PrintK(PRINTK_DEBUG "Detecting VMs...\r\n");
 
