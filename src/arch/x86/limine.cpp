@@ -9,7 +9,6 @@
 #include <capability.hpp>
 #include <random.hpp>
 #include <sha256.hpp>
-#include <micro-ecc/uECC.h>
 #include <slab.hpp>
 #include <cpu.hpp>
 #include <pmm.hpp>
@@ -147,7 +146,6 @@ void LimineEntry() {
 
 	ARCH::InitializeBootCPU();
 	RANDOM::SRand(BootTimeRequest.response->boot_time);
-	uECC_set_rng(reinterpret_cast<uECC_RNG_Function>((void*)&RANDOM::Rng));
 	/*
 	uECC_set_rng(reinterpret_cast<uECC_RNG_Function>((void*)&RANDOM::Rng));
 

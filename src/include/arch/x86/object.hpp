@@ -42,6 +42,7 @@ namespace x86 {
 		u8 HostSave[PAGE_SIZE];
 		u8 MSRPa[PAGE_SIZE * 2]; // MSR Data
 		u8 IOPa[PAGE_SIZE * 2];
+		u8 AVIC[PAGE_SIZE];
 		VMData *Self;
 	}__attribute__((packed, aligned((PAGE_SIZE))));
 }

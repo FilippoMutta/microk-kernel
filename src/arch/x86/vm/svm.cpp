@@ -1,6 +1,7 @@
 #include <arch/x86/vm/svm.hpp>
 #include <arch/x86/cpu.hpp>
 #include <arch/x86/object.hpp>
+#include <arch/x86/apic.hpp>
 #include <arch/x86/gdt.hpp>
 #include <arch/x86/io.hpp>
 #include <vmm.hpp>
@@ -19,6 +20,7 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 	VMCB *hostVmcb = (VMCB*)vcpu->HostVMCB;
 	u8 *msrPa = (u8*)vcpu->MSRPa ; // MSR Bitmap
 	u8 *ioPa = (u8*)vcpu->IOPa ; // IO Bitmap
+	u8 *avic = (u8*)vcpu->AVIC;
 
 	// CONTROL
 	guestVmcb->Control.Intercepts[INTERCEPT_EXCEPTION] |= 0xFFFFFFFF;
@@ -33,18 +35,19 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 
 	guestVmcb->Control.Intercepts[INTERCEPT_WORD4] |= INTERCEPT_VMRUN |
 						          INTERCEPT_VMMCALL;
-	guestVmcb->Control.asid = 1;
+	guestVmcb->Control.ASID = 1;
 
 	guestVmcb->Control.MSRPMBasePa = VMM::VirtualToPhysical((uptr)msrPa);
 	guestVmcb->Control.IOPMBasePa = VMM::VirtualToPhysical((uptr)ioPa);
-	Memset(msrPa, 0x0, PAGE_SIZE * 2);
+	guestVmcb->Control.AVICBackingPage = VMM::VirtualToPhysical((uptr)avic);
+	Memset(msrPa, 0xFF, PAGE_SIZE * 2);
 	Memset(ioPa, 0xFF, PAGE_SIZE * 2);
+	Memset(avic, 0, PAGE_SIZE);
 
-	/*
-	guestVmcb->Control.AVICBackingPage = VMM::VirtualToPhysical((uptr)PMM::RequestPage());
+	// AVIC
+	guestVmcb->Control.AVICBAR = 0xFEE00000;
 	guestVmcb->Control.AVICLogicalID = 0;
 	guestVmcb->Control.AVICPhysicalID = 0;
-	*/
 /*
 	guestVmcb->Control.NestedCtl |= 0 ; // NESTED_CTL_NP_ENABLE;
 	guestVmcb->Control.NestedCR3 = ;
@@ -140,6 +143,10 @@ void SaveVM(uptr statePhysAddr) {
 }
 }
 
+namespace x86 {
+	extern APIC apic;
+}
+
 extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 	using namespace x86;
 	using namespace x86::SVM;
@@ -184,6 +191,8 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 			while(true) { }
 		case _INTR:
 			PRINTK::PrintK(PRINTK_DEBUG "Interrupt physical\r\n");
+			PRINTK::PrintK(PRINTK_DEBUG "Exit info: %d\r\n", vmcb->Control.VirtualINTCtl);
+
 			while(true) { }
 		case _INIT:				
 			PRINTK::PrintK(PRINTK_DEBUG "Interrupt virtual\r\n");
@@ -191,6 +200,14 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 		case _VINTR:
 			PRINTK::PrintK(PRINTK_DEBUG "Interrupt virtual\r\n");
 			while(true) { }
+		case _MSR: {
+			PRINTK::PrintK(PRINTK_DEBUG "MSR intercept\r\n");
+			PRINTK::PrintK(PRINTK_DEBUG "1: \r\n",vmcb->Control.ExitInfo1);
+			PRINTK::PrintK(PRINTK_DEBUG "2: \r\n",vmcb->Control.ExitInfo2);
+			while(true) { }
+			//vmcb->Save.RIP = vmcb->Control.ExitInfo2;
+			}
+			break;
 		case _IOIO: {
 			usize info = vmcb->Control.ExitInfo1;
 			u16 port = info >> 16;

@@ -38,14 +38,8 @@ extern "C" __attribute__((noreturn))
 void KernelStart() {
 	KInfo *info = GetInfo();
 
-	/* Initializing virtual memory */
 	VMM::InitVMM();
-
-	//MEM::Init();
 	ARCH::InitializeCPUFeatures();
-
-	//CAPABILITY::DumpCapabilitySlab(info->RootCSpace);
-
 	LOADER::LoadContainer(info->RootContainer, (u8*)info->ManagerExecutableAddress, info->ManagerExecutableSize);
 
 	HALT;

@@ -14,8 +14,6 @@ namespace x86 {
 __attribute__((section(".interrupt"), aligned(0x10))) IDTEntry IDT[IDT_MAX_DESCRIPTORS];
 __attribute__((section(".interrupt"), aligned(0x10))) IDTR _IDTR;
 
-extern APIC apic;
-
 static inline void PrintRegs(InterruptStatus *context) {
 	PRINTK::PrintK(PRINTK_DEBUG " -> RAX: 0x%x\r\n"
 			" -> RBX: 0x%x\r\n"
@@ -195,23 +193,6 @@ extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
 				PANIC("Page fault");
 			//}
 
-			}
-			break;
-		case 32: {
-			PRINTK::PrintK(PRINTK_DEBUG "\r\nContext switch called.\r\n");
-			
-			uptr cr3;
-			asm volatile("mov %0, %%cr3" : "=r"(cr3));
-			PRINTK::PrintK(PRINTK_DEBUG "CR3: 0x%x\r\n", cr3);
-
-			Capability *cpuCap = CAPABILITY::AddressCPUCapability(&info->CurrentContainer->CSpace, (uptr)info->CurrentContainer);
-			if (cpuCap == NULL) {
-				ArmTimer(&apic,0);
-			} else {
-				ArmTimer(&apic, cpuCap->Size);
-			}
-
-			PRINTK::PrintK(PRINTK_DEBUG "Context switch done.\r\n");
 			}
 			break;
 		default:

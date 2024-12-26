@@ -5,6 +5,8 @@
 #include <panic.hpp>
 #include <cdefs.h>
 
+#include <arch/x86/cpu.hpp>
+
 extern "C" void SyscallMain(usize hypercallNumber, usize firstArgument, usize secondArgument, usize thirdArgument, usize fourthArgument, usize fithArgument, usize sixthArgumen) {
 	KInfo *info = GetInfo();
 
@@ -136,6 +138,24 @@ extern "C" void SyscallMain(usize hypercallNumber, usize firstArgument, usize se
 			VMM::MapIntermediateLevel(vspace, secondArgument, cap->Object, thirdArgument, VMM::ConvertUserFlags(fourthArgument));
 			}
 			break;
+		case SYSCALL_VECTOR_ARCH_READ_MSR: {
+			u32 msr = firstArgument;
+			u32 *resultLo = (u32*)secondArgument;
+			u32 *resultHi = (u32*)thirdArgument;
+			u32 low;
+			u32 high;
+			x86::GetMSR(msr, &low, &high);
+			*resultLo = low;
+			*resultHi = high;
+			}
+			break;
+		case SYSCALL_VECTOR_ARCH_WRITE_MSR: {
+			u32 msr = firstArgument;
+			u32 valueLo = secondArgument;
+			u32 valueHi = thirdArgument;
+			x86::SetMSR(msr, valueLo, valueHi);
+			break;
+			}
 		default:
 			break;
 	}

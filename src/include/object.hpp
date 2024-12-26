@@ -1,7 +1,5 @@
 #pragma once
 #include <cdefs.h>
-#include <sha256.hpp>
-#include <tiny-aes/aes.hpp>
 
 #if defined(__x86_64__)
 #include <arch/x86/object.hpp>
@@ -57,26 +55,6 @@ struct CapabilityTreeNode : public Capability {
 	u32 Level;
 }__attribute__((packed));
 
-
-
-/*
- * WARNING: Experimental, for future use
- */
-struct EncryptedCapability {
-	u8 CapabilityData[sizeof(Capability)];
-	u8 SHA256Hash[SHA256_BLOCK_SIZE]; /* Encrypted hash */
-	u8 IV[AES_BLOCKLEN];
-	/* IV, will be regenerated each time the
-	   hash reencrypted */
-}__attribute__((aligned(0x10)));
-
-#define SECP256k1_PRIVATE_KEY_SIZE 32
-#define SECP256k1_PUBLIC_KEY_SIZE 64
-#define SECP256k1_SHARED_SECRET_SIZE 32
-struct EncryptedCapabilityContext {
-	u8 Secret[SECP256k1_SHARED_SECRET_SIZE];
-}__attribute__((aligned(0x10)));
-
 /*
  *
  */
@@ -122,11 +100,6 @@ struct CapabilitySpace {
 	CapabilityTreeNode *CPUCapabilityTree;
 	CapabilityTreeNode *IOCapabilityTree;
 };
-
-struct ContainerIdentifier {
-	u8 Secret[SECP256k1_SHARED_SECRET_SIZE];
-	u8 IV[AES_BLOCKLEN];
-}__attribute__((aligned(0x10)));
 
 struct VirtualCPU {
 	u8 ID;
@@ -174,7 +147,6 @@ struct ContainerInfo {
 }__attribute__((packed));
 
 struct Container : public ListHead {
-	ContainerIdentifier Identifier;
 	ContainerBindings Bindings;
 
 	CapabilitySpace CSpace;

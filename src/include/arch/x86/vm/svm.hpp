@@ -351,27 +351,27 @@ namespace SVM {
 
 	struct VMCBControlArea {
 		u32 Intercepts[MAX_INTERCEPT];
-		u32 Reserved1[15 - MAX_INTERCEPT];
+		u32 Reserved0[15 - MAX_INTERCEPT];
 		u16 PauseFilterThresh;
 		u16 PauseFilterCount;
 		u64 IOPMBasePa;
 		u64 MSRPMBasePa;
 		u64 TSCOffset;
-		u32 asid;
-		u8 tlb_ctl;
-		u8 reserved_2[3];
-		u32 int_ctl;
-		u32 int_vector;
-		u32 int_state;
-		u8 reserved_3[4];
+		u32 ASID;
+		u8 TLBCtl;
+		u8 Reserved1[3];
+		u32 VirtualINTCtl;
+		u32 VirtualINTVector;
+		u32 InterruptState;
+		u8 Reserved2[4];
 		u32 ExitCode;
-		u32 exit_code_hi;
+		u32 ExitCodeHi;
 		u64 ExitInfo1;
 		u64 ExitInfo2;
-		u32 exit_int_info;
-		u32 exit_int_info_err;
+		u32 ExitIntInfo;
+		u32 ExitIntInfoErr;
 		u64 NestedCtl;
-		u64 avic_vapic_bar;
+		u64 AVICBAR;
 		u64 ghcb_gpa;
 		u32 event_inj;
 		u32 event_inj_err;
@@ -387,7 +387,7 @@ namespace SVM {
 		u64 AVICLogicalID;	/* Offset 0xf0 */
 		u64 AVICPhysicalID;	/* Offset 0xf8 */
 		u8 reserved_7[8];
-		u64 vmsa_pa;		/* Used for an SEV-ES guest */
+		u64 VMSAPa;		/* Used for an SEV-ES guest */
 		u8 reserved_8[720];
 		/*
 		 * Offset 0x3e0, 32 bytes reserved

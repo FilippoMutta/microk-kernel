@@ -7,18 +7,18 @@
 #include <capability.hpp>
 
 namespace x86 {
-void WriteIOAPICRegister(uptr addr, u8 offset, u32 val) {
+static void WriteIOAPIC(IOAPIC *ioapic, u8 offset, u32 val) {
     /* tell IOREGSEL where we want to write to */
-    *(volatile u32*)(addr) = offset;
+    *(volatile u32*)(ioapic->MappedAddress) = offset;
     /* write the value to IOWIN */
-    *(volatile u32*)(addr + 0x10) = val; 
+    *(volatile u32*)(ioapic->MappedAddress + 0x10) = val; 
 }
  
-uint32_t ReadIOAPICRegister(uptr addr, u8 offset) {
+static u32 ReadIOAPIC(IOAPIC *ioapic, u8 offset) {
     /* tell IOREGSEL where we want to read from */
-    *(volatile u32*)(addr) = offset;
+    *(volatile u32*)(ioapic->MappedAddress) = offset;
     /* return the data from IOWIN */
-    return *(volatile u32*)(addr + 0x10);
+    return *(volatile u32*)(ioapic->MappedAddress + 0x10);
 }
 
 int InitializeIOAPIC(IOAPIC *ioapic, u32 id, uptr address) {
@@ -31,9 +31,17 @@ int InitializeIOAPIC(IOAPIC *ioapic, u32 id, uptr address) {
 	PMM::CheckSpace(info->RootCSpace, DEFAULT_CHECK_SPACE);
 	CAPABILITY::GenerateCapability(info->RootCSpace, MMIO_MEMORY, ioapic->Base, ACCESS | READ | WRITE);
 
-	PRINTK::PrintK(PRINTK_DEBUG "IOAPIC with ID 0x%x at 0x%x\r\n",
+	ioapic->MaxIRQ = (ReadIOAPIC(ioapic, IOAPIC_VER) >> 16) + 1;
+
+	PRINTK::PrintK(PRINTK_DEBUG "IOAPIC with ID 0x%x at 0x%x\r\n"
+				    "Can handle %d IRQs\r\n",
 		       ioapic->ID,
-		       ioapic->Base);
+		       ioapic->Base, ioapic->MaxIRQ);
+
+	for (usize idx = 0; idx < ioapic->MaxIRQ; ++idx) {
+			WriteIOAPIC(ioapic, IOAPIC_REDTBL(idx), IOAPIC_REDTLB_MASKED | (0x20 + idx));
+			WriteIOAPIC(ioapic, IOAPIC_REDTBL(idx) + 1, 0);
+	}
 
 	return 0;
 }
