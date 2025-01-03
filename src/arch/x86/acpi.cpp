@@ -470,6 +470,29 @@ int InitializeIVRS(ACPI *acpi, IVRS_t *ivrs) {
 				current->Length,
 				current->IOMMUDeviceID,
 				current->IOMMUBaseAddress);
+		switch(current->Type) {
+			case 0x10: {
+				IVHD10_t *entry = (IVHD10_t*)current;
+				usize entries = (entry->Length - sizeof(IVHD10_t)) / sizeof(u32);
+				PRINTK::PrintK(PRINTK_DEBUG "Device entries: %d\r\n", entries);
+				for (usize i = 0; i < entries; ++i) {
+					PRINTK::PrintK(PRINTK_DEBUG " %d -> 0x%x\r\n", i, entry->DeviceEntries[i]);
+				}
+				}
+				break;
+			case 0x11: {
+				IVHD11_t *entry = (IVHD11_t*)current;
+				usize entries = (entry->Length - sizeof(IVHD11_t)) / sizeof(u64);
+				PRINTK::PrintK(PRINTK_DEBUG "Device entries: %d\r\n", entries);
+
+				for (usize i = 0; i < entries; ++i) {
+					PRINTK::PrintK(PRINTK_DEBUG " %d -> 0x%x\r\n", i, entry->DeviceEntries[i]);
+				}
+				}
+				break;
+			case 0x40:
+				break;
+		}
 
 		current = (IVHD_t*)((uptr)current + current->Length);
 	}

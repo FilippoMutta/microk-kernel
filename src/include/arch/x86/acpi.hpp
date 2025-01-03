@@ -327,11 +327,21 @@ namespace x86 {
 		u32 IOMMUFeatInformation;
 	}__attribute__((packed));
 
-	struct IVHD11_t : public IVHD_t {
-		u64 IOMMUEFRImage;
-		u64 Reserved0;
+	struct IVHD10_t : public IVHD_t {
+		u32 DeviceEntries[];
 	}__attribute__((packed));
 
+	struct IVHD11_t : public IVHD_t {
+		u64 EFRRegisterImage1;
+		u64 EFRRegisterImage2;
+		u64 DeviceEntries[];
+	}__attribute__((packed));
+
+	struct IVHD40_t : public IVHD_t {
+		u64 EFRRegisterImage1;
+		u64 EFRRegisterImage2;
+		u64 DeviceEntries[];
+	}__attribute__((packed));
 
 	struct ACPI {
 		RSDP_t *RSDP;
