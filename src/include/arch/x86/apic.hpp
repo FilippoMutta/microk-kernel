@@ -1,5 +1,6 @@
 #pragma once
 #include <cdefs.h>
+#include <arch/x86/object.hpp>
 
 #define XAPIC_MAX_REGISTER                                0x3E
 #define X2APIC_MAX_REGISTER                               0x3F
@@ -47,16 +48,6 @@
 #define APIC_LVT_TIMER_TSCDEADLINE (2 << 17)
 
 namespace x86 {
-	struct APIC {
-		u32 ID;
-
-		uptr Base;
-		uptr MappedAddress;
-
-		bool ProcessorIsBSP;
-		bool x2APICMode;
-	};
-
 	void ReadAPIC(APIC *device, usize registerSelector, u32 *lo, u32 *hi);
 	void WriteAPIC(APIC *device, usize registerSelector, u32 lo, u32 hi);
 

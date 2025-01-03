@@ -96,13 +96,29 @@ struct CapabilitySlab {
  */
 struct CapabilitySpace {
 	CapabilitySlab Slabs;
+
 	CapabilityTreeNode *CapabilityTree;
 	CapabilityTreeNode *CPUCapabilityTree;
+	CapabilityTreeNode *IRQCapability;
+
+#if defined(__x86_64__)
 	CapabilityTreeNode *IOCapabilityTree;
+#endif
 };
 
+struct VirtualCPU;
+
+struct PhysicalCPU {
+	u32 ID;
+
+	VirtualCPU *CurrentVCPU;
+#if defined(__x86_64__)
+	x86::APIC _APIC;
+#endif
+}__attribute__((aligned(PAGE_SIZE)));
+
 struct VirtualCPU {
-	u8 ID;
+	PhysicalCPU *PCPU;
 
 #if defined(__x86_64__)
 	x86::VMData *Data;

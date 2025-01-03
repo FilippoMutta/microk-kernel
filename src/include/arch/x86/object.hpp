@@ -45,5 +45,23 @@ namespace x86 {
 		u8 AVIC[PAGE_SIZE];
 		VMData *Self;
 	}__attribute__((packed, aligned((PAGE_SIZE))));
+
+	struct APIC {
+		u32 ID;
+
+		uptr Base;
+		uptr MappedAddress;
+
+		bool ProcessorIsBSP;
+		bool x2APICMode;
+	};
+
+	struct IOAPIC {
+		u32 ID;
+		u32 MaxIRQ;
+
+		uptr Base;
+		uptr MappedAddress;
+	};
 }
 

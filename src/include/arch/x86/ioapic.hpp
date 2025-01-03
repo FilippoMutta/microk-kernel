@@ -1,5 +1,6 @@
 #pragma once
 #include <cdefs.h>
+#include <arch/x86/object.hpp>
 
 #define IOAPIC_ID	0x00
 #define IOAPIC_VER	0x01
@@ -8,13 +9,7 @@
 #define IOAPIC_REDTLB_MASKED 0x10000
 
 namespace x86 {
-	struct IOAPIC {
-		u32 ID;
-		u32 MaxIRQ;
-
-		uptr Base;
-		uptr MappedAddress;
-	};
-
+	void WriteIOAPIC(IOAPIC *ioapic, u8 offset, u32 val);
+	u32 ReadIOAPIC(IOAPIC *ioapic, u8 offset);
 	int InitializeIOAPIC(IOAPIC *ioapic, u32 id, uptr address);
 }

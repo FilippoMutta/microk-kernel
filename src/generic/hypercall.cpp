@@ -4,6 +4,7 @@
 #include <capability.hpp>
 #include <panic.hpp>
 #include <cdefs.h>
+#include <arch/x86/cpu.hpp>
 
 extern "C" void HypercallMain(usize hypercallNumber, usize firstArgument, usize secondArgument, usize thirdArgument, usize fourthArgument, usize fithArgument, usize sixthArgument) {
 	KInfo *info = GetInfo();
@@ -23,6 +24,9 @@ extern "C" void HypercallMain(usize hypercallNumber, usize firstArgument, usize 
 		case HYPERCALL_VECTOR_CLONE_CONTAINER:
 			break;
 		case HYPERCALL_VECTOR_DESTROY_CONTAINER:
+			break;
+		case HYPERCALL_VECTOR_REGISTER_IRQ:
+			x86::RegisterIRQ(firstArgument, secondArgument);
 			break;
 		default:
 			break;

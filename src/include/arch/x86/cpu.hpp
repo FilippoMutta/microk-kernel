@@ -40,6 +40,7 @@ struct PVClockTimeInfo_t {
 }__attribute__((packed));
 
 namespace x86 {
+
         inline __attribute__((always_inline))
         void GetMSR(u32 msr, u32 *lo, u32 *hi) {
                 asm volatile("rdmsr" : "=a"(*lo), "=d"(*hi) : "c"(msr));
@@ -187,7 +188,9 @@ namespace x86 {
 	}
 
 	void LoadEssentialCPUStructures();
-	void InitializeCPUFeatures();
+	void InitializeCPUFeatures(PhysicalCPU *cpu);
+
+	void RegisterIRQ(u32 idx, u8 vector);
 
 	void InitializeBootCPU();
 

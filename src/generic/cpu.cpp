@@ -19,8 +19,9 @@ void InitializeBootCPU() {
 }
 
 void InitializeCPUFeatures() {
+	PhysicalCPU *cpu = (PhysicalCPU*)PMM::RequestPage();
 #if defined(__x86_64__)
-	x86::InitializeCPUFeatures();
+	x86::InitializeCPUFeatures(cpu);
 #endif
 }
 
@@ -35,5 +36,4 @@ void LoadSchedulerContext(SchedulerContext *context) {
 #endif
 
 }
-
 }

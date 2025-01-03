@@ -30,8 +30,8 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 							  INTERCEPT_INITR |
 							  INTERCEPT_NMI |
 							  INTERCEPT_SMI |
-							  INTERCEPT_INIT |
-							  INTERCEPT_VINTR ;
+							  INTERCEPT_INIT;
+
 
 	guestVmcb->Control.Intercepts[INTERCEPT_WORD4] |= INTERCEPT_VMRUN |
 						          INTERCEPT_VMMCALL;
@@ -40,14 +40,19 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 	guestVmcb->Control.MSRPMBasePa = VMM::VirtualToPhysical((uptr)msrPa);
 	guestVmcb->Control.IOPMBasePa = VMM::VirtualToPhysical((uptr)ioPa);
 	guestVmcb->Control.AVICBackingPage = VMM::VirtualToPhysical((uptr)avic);
-	Memset(msrPa, 0xFF, PAGE_SIZE * 2);
+	Memset(msrPa, 0x00, PAGE_SIZE * 2);
 	Memset(ioPa, 0xFF, PAGE_SIZE * 2);
-	Memset(avic, 0, PAGE_SIZE);
+	Memset(avic, 0x00, PAGE_SIZE);
 
 	// AVIC
+	guestVmcb->Control.VirtualINTCtl |= (1 << 24); // Virtualize masking
+	guestVmcb->Control.VirtualINTCtl |= (1 << 25); // Virtual gif enabled
+	guestVmcb->Control.VirtualINTCtl |= (1 << 31); // AVIC
+	guestVmcb->Control.VirtualINTCtl |= (1 << 30); // x2AVIC
+	//guestVmcb->Control.VirtualINTVector = 33;
 	guestVmcb->Control.AVICBAR = 0xFEE00000;
-	guestVmcb->Control.AVICLogicalID = 0;
-	guestVmcb->Control.AVICPhysicalID = 0;
+	guestVmcb->Control.AVICLogicalTable = 0;
+	guestVmcb->Control.AVICPhysicalTable = 0;
 /*
 	guestVmcb->Control.NestedCtl |= 0 ; // NESTED_CTL_NP_ENABLE;
 	guestVmcb->Control.NestedCR3 = ;
@@ -153,7 +158,8 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 			
 	KInfo *info = GetInfo();
 
-	VMCB *vmcb = (VMCB*)VMM::PhysicalToVirtual(addr);
+	VMData *vmdata = (VMData*)VMM::PhysicalToVirtual(addr);
+	VMCB *vmcb = (VMCB*)vmdata->GuestVMCB;
 	Container *container = info->RootContainer;
 	CapabilitySpace *cspace = &container->CSpace;
 
@@ -189,11 +195,17 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 		case _CR3_WRITE:
 			PRINTK::PrintK("Change cr3: 0x%x\r\n", vmcb->Control.ExitInfo1);
 			while(true) { }
-		case _INTR:
+		case _INTR: {
 			PRINTK::PrintK(PRINTK_DEBUG "Interrupt physical\r\n");
-			PRINTK::PrintK(PRINTK_DEBUG "Exit info: %d\r\n", vmcb->Control.VirtualINTCtl);
+			PRINTK::PrintK(PRINTK_DEBUG "Data: %d\r\n", vmcb->Control.VirtualINTCtl);
+			x86::AckInterrupt(&apic);
 
 			while(true) { }
+
+			//vmcb->Control.VirtualINTCtl &= ~(1 << 8);
+			//vmcb->Save.RIP = (uptr)container->Bindings.InterruptHandler;
+			}
+			break;
 		case _INIT:				
 			PRINTK::PrintK(PRINTK_DEBUG "Interrupt virtual\r\n");
 			while(true) { }
@@ -270,7 +282,7 @@ extern "C" void HandleVMExit(uptr addr, x86::GeneralRegisters *context) {
 		case _EXCP13_WRITE:
 			PRINTK::PrintK(PRINTK_DEBUG "INT13\r\n");
 			PRINTK::PrintK(PRINTK_DEBUG "ErrorCode: 0x%x\r\n", vmcb->Control.ExitInfo1);
-			while(true) { }
+			break;
 		default:
 			PRINTK::PrintK(PRINTK_DEBUG "Hello, VMEXIT: 0x%x\r\n", vmcb->Control.ExitCode);
 			PRINTK::PrintK(PRINTK_DEBUG "Unknown error\r\n");

@@ -122,7 +122,10 @@ namespace x86 {
 
 	#define MADT_ENTRY_APIC_SOURCE_OVERRIDE 2
 	struct MADTAPICSourceOverrideEntry_t : public MADTEntry_t {
-
+		u8 BusSource;
+		u8 IRQSource;
+		u32 GlobalSystemInterrupt;
+		u16 Flags;
 	}__attribute__((packed));
 
 	#define MADT_ENTRY_IOAPIC_NONMASK_SOURCE 3
@@ -305,17 +308,35 @@ namespace x86 {
 		u8 PageProtection;
 	}__attribute__((packed));
 
+	struct IVRS_t : public SDTHeader_t {
+		u32 IVInfo;
+		u8 Reserved[8];
 
-	#define MAX_IOAPIC 4
+		u8 IVBDStart;
+	}__attribute__((packed));
+
+	struct IVHD_t {
+		u8 Type;
+		u8 FLags;
+		u16 Length;
+		u8 IOMMUDeviceID;
+		u8 CapabilityOffset;
+		u64 IOMMUBaseAddress;
+		u16 PCISegGroup;
+		u16 IOMMUInfo;
+		u32 IOMMUFeatInformation;
+	}__attribute__((packed));
+
+	struct IVHD11_t : public IVHD_t {
+		u64 IOMMUEFRImage;
+		u64 Reserved0;
+	}__attribute__((packed));
+
 
 	struct ACPI {
 		RSDP_t *RSDP;
 		SDTHeader_t *MainSDT;
 		u8 MainSDTPointerSize;
-
-		u32 APICCount;
-		u32 IOAPICCount;
-		IOAPIC IOApics[MAX_IOAPIC];
 	};
 
 	int InitializeACPI(ACPI *acpi);
@@ -324,4 +345,5 @@ namespace x86 {
 	int InitializeSRAT(ACPI *acpi, SRAT_t *srat);
 	int InitializeMCFG(ACPI *acpi, MCFG_t *srat);
 	int InitializeHPET(ACPI *acpi, HPET_t *hpet);
+	int InitializeIVRS(ACPI *acpi, IVRS_t *ivrs);
 }

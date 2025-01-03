@@ -107,7 +107,7 @@ void LoadEssentialCPUStructures() {
 	IDTInit();
 }
 
-void InitializeCPUFeatures() {
+void InitializeCPUFeatures(PhysicalCPU *cpu) {
 	KInfo *info = GetInfo();
 	
 	PMM::CheckSpace(info->RootCSpace, DEFAULT_CHECK_SPACE);
@@ -239,6 +239,13 @@ void InitializeCPUFeatures() {
 	}
 
 
+}
+
+void RegisterIRQ(u32 idx, u8 vector) {
+	PRINTK::PrintK(PRINTK_DEBUG "Registering IRQ: 0x%x\r\n", vector);
+
+	WriteIOAPIC(&ioapic, IOAPIC_REDTBL(idx), vector);
+	WriteIOAPIC(&ioapic, IOAPIC_REDTBL(idx) + 1, 0);
 }
 
 void InitializeBootCPU() {

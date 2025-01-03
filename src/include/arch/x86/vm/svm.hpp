@@ -373,7 +373,7 @@ namespace SVM {
 		u64 NestedCtl;
 		u64 AVICBAR;
 		u64 ghcb_gpa;
-		u32 event_inj;
+		u32 EventInj;
 		u32 event_inj_err;
 		u64 NestedCR3;
 		u64 virt_ext;
@@ -384,8 +384,8 @@ namespace SVM {
 		u8 insn_bytes[15];
 		u64 AVICBackingPage;	/* Offset 0xe0 */
 		u8 reserved_6[8];	/* Offset 0xe8 */
-		u64 AVICLogicalID;	/* Offset 0xf0 */
-		u64 AVICPhysicalID;	/* Offset 0xf8 */
+		u64 AVICLogicalTable;	/* Offset 0xf0 */
+		u64 AVICPhysicalTable;	/* Offset 0xf8 */
 		u8 reserved_7[8];
 		u64 VMSAPa;		/* Used for an SEV-ES guest */
 		u8 reserved_8[720];

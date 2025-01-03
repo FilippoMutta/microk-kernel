@@ -7,14 +7,14 @@
 #include <capability.hpp>
 
 namespace x86 {
-static void WriteIOAPIC(IOAPIC *ioapic, u8 offset, u32 val) {
+void WriteIOAPIC(IOAPIC *ioapic, u8 offset, u32 val) {
     /* tell IOREGSEL where we want to write to */
     *(volatile u32*)(ioapic->MappedAddress) = offset;
     /* write the value to IOWIN */
     *(volatile u32*)(ioapic->MappedAddress + 0x10) = val; 
 }
  
-static u32 ReadIOAPIC(IOAPIC *ioapic, u8 offset) {
+u32 ReadIOAPIC(IOAPIC *ioapic, u8 offset) {
     /* tell IOREGSEL where we want to read from */
     *(volatile u32*)(ioapic->MappedAddress) = offset;
     /* return the data from IOWIN */

@@ -11,6 +11,8 @@ extern "C" void *ISRStubTable[];
 extern "C" x86::InterruptStatus *InterruptHandler(x86::InterruptStatus *context);
 
 namespace x86 {
+extern APIC apic;
+
 __attribute__((section(".interrupt"), aligned(0x10))) IDTEntry IDT[IDT_MAX_DESCRIPTORS];
 __attribute__((section(".interrupt"), aligned(0x10))) IDTR _IDTR;
 
@@ -96,9 +98,18 @@ void IDTInit() {
 	asm volatile ("sti");
 }
 
-extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
-	KInfo *info = GetInfo();
+InterruptStatus *HandleExceptions(InterruptStatus *context);
+InterruptStatus *HandleInterrupts(InterruptStatus *context);
 
+extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
+	if (context->Base.VectorNumber < 0x20) {
+		return HandleExceptions(context);
+	} else {
+		return HandleInterrupts(context);
+	}
+}
+
+InterruptStatus *HandleExceptions(InterruptStatus *context) {
 	switch(context->Base.VectorNumber) {
 		case 0:
 			PRINTK::PrintK(PRINTK_DEBUG "Division by zero.\r\n");
@@ -122,11 +133,6 @@ extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
 			break;
 			}
 		case 14: {
-			// TODO
-/*
-			Scheduler *scheduler = info->BootDomain->DomainScheduler;
-			ThreadControlBlock *activeThread = scheduler->Running;
-*/
 			uptr page = 0;
 			bool protectionViolation = context->Base.ErrorCode & 0b1;
 			bool writeAccess = (context->Base.ErrorCode & 0b10) >> 1;
@@ -147,61 +153,21 @@ extern "C" InterruptStatus *InterruptHandler(InterruptStatus *context) {
 				       writeAccess ? "write" : "read",
 				       byUser ? "userspace" : "Kernelspace",
 				       wasInstructionFetch ? "was" : "wasn't");
-/*
-
-			if (byUser) {
-				volatile u64 *pte = x86_64::FindMappedPTE(activeThread->MemorySpace, page, false);
-				if (*pte & VMM_FLAGS_USER) {
-					if (writeAccess) {
-						if (*pte & VMM_FLAGS_WRITE) {
-							if (*pte & VMM_FLAGS_READ) {
-								PRINTK::PrintK(PRINTK_DEBUG "Write -> RW\r\n");
-							} else {
-								PRINTK::PrintK(PRINTK_DEBUG "Write -> Write\r\n");
-							}
-						} else if (*pte & VMM_FLAGS_READ) {
-							PRINTK::PrintK(PRINTK_DEBUG "Write -> Read\r\n");
-						} else {
-							PRINTK::PrintK(PRINTK_DEBUG "Write -> Nil\r\n");
-						}
-					} else {
-						if (*pte & VMM_FLAGS_WRITE) {
-							if (*pte & VMM_FLAGS_READ) {
-								PRINTK::PrintK(PRINTK_DEBUG "Read -> RW\r\n");
-							} else {
-								PRINTK::PrintK(PRINTK_DEBUG "Read -> Write\r\n");
-							}
-						} else if (*pte & VMM_FLAGS_READ) {
-							PRINTK::PrintK(PRINTK_DEBUG "Read -> Read\r\n");
-						} else {
-							PRINTK::PrintK(PRINTK_DEBUG "Read -> Nil\r\n");
-						}
-
-					}
-				} else {
-					if (writeAccess) {
-						PRINTK::PrintK(PRINTK_DEBUG "Write -> Krnl\r\n");
-					} else {
-						PRINTK::PrintK(PRINTK_DEBUG "Read -> Krnl\r\n");
-					}
-
-					// KILL PROCESS
-				}
-
-				PANIC("Page fault");
-			} else {*/
-				PANIC("Page fault");
-			//}
+			
+			PANIC("Page fault");
 
 			}
 			break;
-		default:
-			PRINTK::PrintK(PRINTK_DEBUG "Unhandled interrupt: 0x%x\r\n", context->Base.VectorNumber);
-			OOPS("Unhandled interrupt");
-			break;
 	}
-	
-	(void)info;
+
 	return context;
 }
+
+InterruptStatus *HandleInterrupts(InterruptStatus *context) {		
+	PRINTK::PrintK(PRINTK_DEBUG "Unhandled interrupt: 0x%x\r\n", context->Base.VectorNumber);
+
+	x86::AckInterrupt(&apic);
+	return context;
+}
+
 }

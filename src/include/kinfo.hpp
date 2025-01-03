@@ -63,7 +63,7 @@ struct KInfo {
 
 	Container *CurrentContainer;
 
-	void *BootDomain;
+	PhysicalCPU *BootCPU;
 
 	uptr RSDP;
 	uptr DeviceTree;

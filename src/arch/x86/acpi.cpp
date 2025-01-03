@@ -1,4 +1,5 @@
 #include <arch/x86/acpi.hpp>
+#include <arch/x86/iommu.hpp>
 #include <printk.hpp>
 #include <arch/x86/cpu.hpp>
 #include <kinfo.hpp>
@@ -72,7 +73,7 @@ int InitializeACPI(ACPI *acpi) {
 			SDTHeader_t *sdt = (SDTHeader_t*)VMM::PhysicalToVirtual(*ptr);
 
 			Memcpy(sig, sdt->Signature, 4);
-			PRINTK::PrintK(PRINTK_DEBUG "%d: 0x%x -> %s\r\n", i, *ptr, sig);
+			PRINTK::PrintK(PRINTK_DEBUG "%d: 0x%x %d bytes -> %s\r\n", i, *ptr, sdt->Length, sig);
 
 			if (Memcmp(sdt->Signature, "FACP", 4) == 0) {
 				PRINTK::PrintK(PRINTK_DEBUG "Processing FADT\r\n");
@@ -89,6 +90,9 @@ int InitializeACPI(ACPI *acpi) {
 			} else if (Memcmp(sdt->Signature, "HPET", 4) == 0) {
 				PRINTK::PrintK(PRINTK_DEBUG "Processing HPET\r\n");
 				InitializeHPET(acpi, (HPET_t*)sdt);
+			} else if (Memcmp(sdt->Signature, "IVRS", 4) == 0) {
+				PRINTK::PrintK(PRINTK_DEBUG "Processing IVRS\r\n");
+				InitializeIVRS(acpi, (IVRS_t*)sdt);
 			}
 		} else {
 			u32 *ptr = (u32*)((uptr)acpi->MainSDT + sizeof(SDTHeader_t) + i * 4);
@@ -102,7 +106,7 @@ int InitializeACPI(ACPI *acpi) {
 
 			Memcpy(sig, sdt->Signature, 4);
 			
-			PRINTK::PrintK(PRINTK_DEBUG "%d: 0x%x -> %s\r\n", i, *ptr, sig);
+			PRINTK::PrintK(PRINTK_DEBUG "%d: 0x%x %d bytes -> %s\r\n", i, *ptr, sdt->Length, sig);
 
 			if (Memcmp(sdt->Signature, "APIC", 4) == 0) {
 				PRINTK::PrintK(PRINTK_DEBUG "Processing MADT\r\n");
@@ -114,12 +118,13 @@ int InitializeACPI(ACPI *acpi) {
 				PRINTK::PrintK(PRINTK_DEBUG "Processing MCFG\r\n");
 				InitializeMCFG(acpi, (MCFG_t*)sdt);
 			}
+
 		}
 	}
 
 	return 0;
 }
-	
+					
 int InitializeFADT(ACPI *acpi, FADT_t *fadt) {
 	KInfo *info = GetInfo();
 
@@ -154,6 +159,8 @@ int InitializeFADT(ACPI *acpi, FADT_t *fadt) {
 	return 0;
 }
 
+extern IOAPIC ioapic;
+
 int InitializeMADT(ACPI *acpi, MADT_t *madt) {
 	uptr currentPtr = (uptr)&madt->FirstEntry;
 	uptr entriesEnd = (uptr)madt + madt->Length;
@@ -176,13 +183,17 @@ int InitializeMADT(ACPI *acpi, MADT_t *madt) {
 						entry->IOAPICAddress,
 						entry->GlobalSystemInterruptBase);
 
-				if (acpi->IOAPICCount < MAX_IOAPIC) {
-					InitializeIOAPIC(&acpi->IOApics[acpi->IOAPICCount++], entry->IOAPICID, entry->IOAPICAddress);
-				}
+				InitializeIOAPIC(&ioapic, entry->IOAPICID, entry->IOAPICAddress);
 			}
 			break;
 			case MADT_ENTRY_APIC_SOURCE_OVERRIDE: {
-				PRINTK::PrintK(PRINTK_DEBUG "MADT APIC source override entry\r\n");
+				MADTAPICSourceOverrideEntry_t *entry = (MADTAPICSourceOverrideEntry_t*)current;
+				PRINTK::PrintK(PRINTK_DEBUG "MADT APIC source override entry\r\n"
+						" Bus source: 0x%x\r\n"
+						" IRQ source: 0x%x\r\n"
+						" Global system interrupt: 0x%x\r\n",
+						entry->BusSource, entry->IRQSource,
+						entry->GlobalSystemInterrupt);
 			}
 			break;
 			case MADT_ENTRY_IOAPIC_NONMASK_SOURCE: {
@@ -385,8 +396,8 @@ int InitializeMCFG(ACPI *acpi, MCFG_t *mcfg) {
 					if(header->DeviceID == 0) continue;
 					if(header->DeviceID == 0xFFFF) continue;
 					
-					PRINTK::PrintK(PRINTK_DEBUG"  Function addr: 0x%x\r\n", functionAddress);
-					PRINTK::PrintK(PRINTK_DEBUG"   ID: %x:%x\r\n", header->DeviceID, header->VendorID);
+					PRINTK::PrintK(PRINTK_DEBUG "  Function addr: 0x%x\r\n", functionAddress);
+					PRINTK::PrintK(PRINTK_DEBUG "   ID: %x:%x\r\n", header->DeviceID, header->VendorID);
 
 					u8 headerType = header->HeaderType & 0x0F;
 					if (headerType == 0) {
@@ -446,4 +457,23 @@ int InitializeHPET(ACPI *acpi, HPET_t *hpet) {
 	return 0;
 }
 
+int InitializeIVRS(ACPI *acpi, IVRS_t *ivrs) {
+	IVHD_t *current = (IVHD_t*)&ivrs->IVBDStart;
+
+	while((uptr)current + current->Length <= (uptr)&ivrs->IVBDStart + ivrs->Length) {
+		PRINTK::PrintK(PRINTK_DEBUG "IVHD:\r\n"
+				"Type: %x\r\n"
+				"Length: %d bytes\r\n"
+				"IOMMU DeviceID: %x\r\n"
+				"IOMMU Base addr: 0x%x\r\n",
+				current->Type,
+				current->Length,
+				current->IOMMUDeviceID,
+				current->IOMMUBaseAddress);
+
+		current = (IVHD_t*)((uptr)current + current->Length);
+	}
+
+	return 0;
+}
 }
