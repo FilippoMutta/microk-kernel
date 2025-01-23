@@ -317,7 +317,7 @@ namespace x86 {
 
 	struct IVHD_t {
 		u8 Type;
-		u8 FLags;
+		u8 Flags;
 		u16 Length;
 		u8 IOMMUDeviceID;
 		u8 CapabilityOffset;
@@ -326,7 +326,23 @@ namespace x86 {
 		u16 IOMMUInfo;
 		u32 IOMMUFeatInformation;
 	}__attribute__((packed));
-
+/*
+	struct IVHD10Feature_t {
+		u8 XTSup : 1;
+		u8 NXSup : 1;
+		u8 GTSup : 1;
+		u8 GLXSup: 2;
+		u8 IASup : 1;
+		u8 GASup : 1;
+		u8 HESup : 1;
+		u8 PASMax: 4;
+		u8 PNCounters : 3;
+		u8 PNBanks : 5;
+		u8 MSINumPPR : 4;
+		u8 GATS : 2;
+		u8 HATS : 2;
+	}__attribute__((packed));
+*/
 	struct IVHD10_t : public IVHD_t {
 		u32 DeviceEntries[];
 	}__attribute__((packed));
@@ -334,7 +350,7 @@ namespace x86 {
 	struct IVHD11_t : public IVHD_t {
 		u64 EFRRegisterImage1;
 		u64 EFRRegisterImage2;
-		u64 DeviceEntries[];
+		u32 DeviceEntries[];
 	}__attribute__((packed));
 
 	struct IVHD40_t : public IVHD_t {

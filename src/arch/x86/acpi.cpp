@@ -1,5 +1,5 @@
 #include <arch/x86/acpi.hpp>
-#include <arch/x86/iommu.hpp>
+#include <arch/x86/iommu/amd-iommu.hpp>
 #include <printk.hpp>
 #include <arch/x86/cpu.hpp>
 #include <kinfo.hpp>
@@ -458,18 +458,24 @@ int InitializeHPET(ACPI *acpi, HPET_t *hpet) {
 }
 
 int InitializeIVRS(ACPI *acpi, IVRS_t *ivrs) {
-	IVHD_t *current = (IVHD_t*)&ivrs->IVBDStart;
+	PRINTK::PrintK(PRINTK_DEBUG "IVRS revision %x\r\n", ivrs->CreatorRevision);
 
+	IVHD_t *current = (IVHD_t*)&ivrs->IVBDStart;
 	while((uptr)current + current->Length <= (uptr)&ivrs->IVBDStart + ivrs->Length) {
 		PRINTK::PrintK(PRINTK_DEBUG "IVHD:\r\n"
 				"Type: %x\r\n"
 				"Length: %d bytes\r\n"
 				"IOMMU DeviceID: %x\r\n"
-				"IOMMU Base addr: 0x%x\r\n",
+				"IOMMU Base addr: 0x%x\r\n"
+				"IOMMU Capability off: 0x%x\r\n",
 				current->Type,
 				current->Length,
 				current->IOMMUDeviceID,
-				current->IOMMUBaseAddress);
+				current->IOMMUBaseAddress,
+				current->CapabilityOffset);
+
+		InitializeAMDIOMMU(current->IOMMUBaseAddress, current->CapabilityOffset);
+
 		switch(current->Type) {
 			case 0x10: {
 				IVHD10_t *entry = (IVHD10_t*)current;
@@ -482,11 +488,18 @@ int InitializeIVRS(ACPI *acpi, IVRS_t *ivrs) {
 				break;
 			case 0x11: {
 				IVHD11_t *entry = (IVHD11_t*)current;
-				usize entries = (entry->Length - sizeof(IVHD11_t)) / sizeof(u64);
+				usize entries = (entry->Length - sizeof(IVHD11_t)) / sizeof(u32);
 				PRINTK::PrintK(PRINTK_DEBUG "Device entries: %d\r\n", entries);
 
 				for (usize i = 0; i < entries; ++i) {
-					PRINTK::PrintK(PRINTK_DEBUG " %d -> 0x%x\r\n", i, entry->DeviceEntries[i]);
+					u32 ent = entry->DeviceEntries[i];
+					PRINTK::PrintK(PRINTK_DEBUG " %d -> 0x%x\r\n", i, ent);
+					PRINTK::PrintK(PRINTK_DEBUG "  Device entry type: %x\r\n"
+							            "  DevID: %x\r\n"
+								    "  DTE Setting: %x\r\n",
+								    ent & 0xFF,
+								    (ent >> 8) & 0xFFFF,
+								    (ent >> 24) & 0xFF);
 				}
 				}
 				break;

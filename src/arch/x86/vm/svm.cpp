@@ -27,7 +27,7 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 	guestVmcb->Control.Intercepts[INTERCEPT_WORD3] |= INTERCEPT_MSR_PROT |
 					                  INTERCEPT_CPUID |
 							  INTERCEPT_IOIO_PROT |
-							  INTERCEPT_INITR |
+							  //INTERCEPT_INITR |
 							  INTERCEPT_NMI |
 							  INTERCEPT_SMI |
 							  INTERCEPT_INIT;
@@ -49,17 +49,11 @@ int InitializeVMCB(VMData *vcpu, uptr rip, uptr rsp, uptr rflags, uptr cr3) {
 	guestVmcb->Control.VirtualINTCtl |= (1 << 25); // Virtual gif enabled
 	guestVmcb->Control.VirtualINTCtl |= (1 << 31); // AVIC
 	guestVmcb->Control.VirtualINTCtl |= (1 << 30); // x2AVIC
-	//guestVmcb->Control.VirtualINTVector = 33;
 	guestVmcb->Control.AVICBAR = 0xFEE00000;
 	guestVmcb->Control.AVICLogicalTable = 0;
 	guestVmcb->Control.AVICPhysicalTable = 0;
-/*
-	guestVmcb->Control.NestedCtl |= 0 ; // NESTED_CTL_NP_ENABLE;
-	guestVmcb->Control.NestedCR3 = ;
-*/	
 
 	// SAVE
-	(void)info;
 	guestVmcb->Save.RAX = info->ContainerInfoAddr;
 
 	guestVmcb->Save.CR0 = GetCR0();

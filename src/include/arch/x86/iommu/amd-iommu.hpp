@@ -1,8 +1,5 @@
 #pragma once
-
-#define IOMMU_PCI_CLASS    0x8
-#define IOMMU_PCI_SUBCLASS 0x6
-#define IOMMU_PROG_IF      0x0
+#include <cdefs.h>
 
 #define IOMMU_BASE          0xFD00000000
 #define IOMMU_INTERRUPT     0xFDF8000000
@@ -12,3 +9,7 @@
 #define IOMMU_IO_SPACE      0xFDFC000000
 #define IOMMU_CONFIGURATION 0xFDFE000000
 #define IOMMU_EXT_CONFIG    0xFE00000000
+
+namespace x86 {
+	void InitializeAMDIOMMU(uptr addr, u8 capabilityOff);
+}
